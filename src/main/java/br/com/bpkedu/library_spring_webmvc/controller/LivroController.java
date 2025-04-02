@@ -1,60 +1,55 @@
 package br.com.bpkedu.library_spring_webmvc.controller;
 
 import br.com.bpkedu.library_spring_webmvc.domain.Livro;
+import br.com.bpkedu.library_spring_webmvc.dto.LivroDTO;
 import br.com.bpkedu.library_spring_webmvc.service.LivroService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List; // Certifique-se de que esta linha está presente
+
 @Controller
 @RequestMapping("/livros")
 public class LivroController {
+
     @Autowired
     private LivroService livroService;
 
     @GetMapping("/listar")
     public String listarLivros(Model model) {
-        model.addAttribute("livros", livroService.listarTodos());
+        List<Livro> livros = livroService.listarTodos();
+        List<LivroDTO> livrosDTO = livros.stream()
+                .map(LivroDTO::fromLivro)
+                .toList();
+        model.addAttribute("livros", livrosDTO);
         return "livros/listar";
     }
 
     @GetMapping("/{id:\\d+}")
     public String detalharLivro(@PathVariable Long id, Model model) {
-        model.addAttribute("livro", livroService.buscarPorId(id));
+        Livro livro = livroService.buscarPorId(id);
+        LivroDTO livroDTO = LivroDTO.fromLivro(livro);
+        model.addAttribute("livro", livroDTO);
         return "livros/detalhar";
     }
 
     @GetMapping("/novo")
     public String formularioNovoLivro(Model model) {
-        model.addAttribute("livro", new Livro());
+        model.addAttribute("livro", new LivroDTO());
         return "livros/novo";
     }
 
     @PostMapping("/salvar")
-    public String salvarLivro(@ModelAttribute Livro livro) {
-        livroService.salvar(livro);
+    public String salvarLivro(@ModelAttribute LivroDTO livroDTO) {
+        livroService.salvar(livroDTO);
         return "redirect:/livros/listar";
     }
 
-    @GetMapping("/editar/{id:\\d+}")
-    public String formularioEditarLivro(@PathVariable Long id, Model model) {
-        model.addAttribute("livro", livroService.buscarPorId(id));
-        return "livros/editar";
-    }
-
-    @PostMapping("/editar/{id}")
-    public String atualizarLivro(@PathVariable Long id, @ModelAttribute Livro livro) {
-        livro.setId(id); // Garante que o ID do livro seja o mesmo da URL
-        livroService.salvar(livro); // Atualiza o livro no banco de dados
-        return "redirect:/livros/listar"; // Redireciona para a listagem de livros
-    }
-
-
-
     @GetMapping("/deletar/{id:\\d+}")
     public String deletarLivro(@PathVariable Long id) {
-        livroService.deletar(id);
+        livroService.deletarPorId(id);
         return "redirect:/livros/listar";
     }
 }
